@@ -1,6 +1,79 @@
 ﻿@page "/families"
+@using Microsoft.EntityFrameworkCore
 <h3>LlistaFamilies</h3>
 
-@code {
+<a href="/families/form" class="btn btn-success">Crear</a>
+<table class="table table-responsive table-striped">
+    <thead>
+        <tr>
+            <th scope="col">CodiFamilia</th>
+            <th scope="col">Descripció</th>
+            <th scope="col">Opcions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (families != null)
+        {
+            foreach (var familia in families)
+            {
+                <tr>
+                    <th scope="row">@familia.CodiFamilia</th>
+                    <td>@familia.Descripcio</td>
+                    <td>
+                        <a href="/families/form/@familia.CodiFamilia" class="btn btn-warning">Editar</a>
+                        <button class="btn btn-danger" @onclick="() => eliminar(familia)">Eliminar</button>
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+<nav>
+  <ul class="pagination">
+    <li class="page-item"><a class="page-link" @onclick="@(() => savePageNumber(pageNumber-1))">Anterior</a></li>
+    @for(int i = 1; i<= @max ; i++) {
+        var p = i;
+        <li class="page-item"><a class="page-link" @onclick="@(() => savePageNumber(p))">@i</a></li>
+    }
+    <li class="page-item"><a class="page-link" @onclick="@(() => savePageNumber(pageNumber+1))">Següent</a></li>
+  </ul>
+</nav>
 
+@code {
+    [Inject] ArticlesDbContext ArticlesDbContext { get; set; }
+    [Inject] IJSRuntime JSRuntime { get; set; }
+    private List<Familia> _families = new List<Familia>();
+    private IEnumerable<Familia> families;
+    private int pageSize = 15;
+    private int max;
+    private int pageNumber = 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _families = await ArticlesDbContext.Families.ToListAsync();
+        families = _families.Take(pageSize);
+        max = Convert.ToInt32(Math.Ceiling(_families.Count() / Convert.ToDecimal(pageSize)));
+    }
+
+    void savePageNumber(int p)
+    {
+        if (p >= 1 && p <= max)
+        {
+            pageNumber = p;
+            families = _families.Skip((p-1) * pageSize).Take(pageSize);
+            StateHasChanged();
+        }
+    }
+
+    async Task eliminar(Familia familia)
+    {
+        if (!await JSRuntime.InvokeAsync<bool>("confirm", $"Vols eliminar la familia d'articles '{familia.Descripcio}'?"))
+            return;
+
+        ArticlesDbContext.Families.Remove(familia);
+        await ArticlesDbContext.SaveChangesAsync();
+        _families.Remove(familia);
+        families = _families.Skip((pageNumber-1) * pageSize).Take(pageSize);
+        StateHasChanged();
+    }
 }

@@ -1,6 +1,69 @@
 ﻿@page "/articles"
+@using Microsoft.EntityFrameworkCore
 <h3>LlistaArticles</h3>
 
-@code {
+<table class="table table-responsive table-striped">
+    <thead>
+        <tr>
+            <th scope="col">CodiArticle</th>
+            <th scope="col">CodiFamilia</th>
+            <th scope="col">Descripcio</th>
+            <th scope="col">Envas</th>
+            <th scope="col">Pes</th>
+            <th scope="col">PreuVenda</th>
+            <th scope="col">Observacions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (articles != null)
+        {
+            foreach (var article in articles)
+            {
+                <tr>
+                    <th scope="row">@article.CodiArticle</th>
+                    <td>@article.CodiFamilia</td>
+                    <td>@article.Descripcio</td>
+                    <td>@article.Envas</td>
+                    <td>@article.Pes</td>
+                    <td>@article.PreuVenda</td>
+                    <td>@article.Observacions</td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+<nav>
+  <ul class="pagination">
+    <li class="page-item"><a class="page-link" @onclick="@(() => savePageNumber(pageNumber-1))">Anterior</a></li>
+    @for(int i = 1; i<= @max ; i++) {
+        var p = i;
+        <li class="page-item"><a class="page-link" @onclick="@(() => savePageNumber(p))">@i</a></li>
+    }
+    <li class="page-item"><a class="page-link" @onclick="@(() => savePageNumber(pageNumber+1))">Següent</a></li>
+  </ul>
+</nav>
 
+@code {
+    [Inject] ArticlesDbContext ArticlesDbContext { get; set; }
+    private List<Article> _articles = new List<Article>();
+    private IEnumerable<Article> articles;
+    private int pageSize = 15;
+    private int max = 10;
+    private int pageNumber = 1;
+    protected override async Task OnInitializedAsync()
+    {
+        _articles = await ArticlesDbContext.Articles.ToListAsync();
+        articles = _articles.Take(pageSize);
+        //max = Convert.ToInt32(Math.Ceiling(_articles.Count() / Convert.ToDecimal(pageSize)));
+    }
+
+    void savePageNumber(int p)
+    {
+        if (p >= 1 && p <= max)
+        {
+            pageNumber = p;
+            articles = _articles.Skip((p-1) * pageSize).Take(pageSize);
+            StateHasChanged();
+        }
+    }
 }
