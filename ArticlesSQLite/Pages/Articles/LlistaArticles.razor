@@ -9,7 +9,19 @@
   </label>
 </div>
 
-<a href="/articles/form" class="btn btn-success">Crear</a>
+@if(showModal){
+    <div class="modal" tabindex="-1" role="dialog" style="display:block">
+        <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-body">
+                <FormArticles @bind-showModal="@showModal" codi="@codi" OnSubmit="readList"></FormArticles>
+            </div>
+        </div>
+        </div>
+    </div>
+}
+
+<a @onclick="crear" class="btn btn-success">Crear</a>
 <table class="table table-responsive table-striped">
     <thead>
         <tr>
@@ -41,7 +53,7 @@
                         <td>@article.PreuVenda</td>
                         <td>@article.Observacions</td>
                         <td>
-                            <a href="/articles/form/@article.CodiArticle" class="btn btn-warning">Editar</a>
+                            <a @onclick="() => editar(article.CodiArticle)" class="btn btn-warning">Editar</a>
                             <button class="btn btn-danger" @onclick="() => eliminar(article)">Eliminar</button>
                         </td>
                     </tr>
@@ -56,7 +68,7 @@
                         <td>@article.PreuVenda</td>
                         <td>@article.Observacions</td>
                         <td>
-                            <a href="/articles/form/@article.CodiArticle" class="btn btn-warning">Editar</a>
+                            <a @onclick="() => editar(article.CodiArticle)" class="btn btn-warning">Editar</a>
                             <button class="btn btn-danger" @onclick="() => eliminar(article)">Eliminar</button>
                         </td>
                     </tr>
@@ -85,6 +97,8 @@
     private int pageNumber = 1;
     private int count;
     private bool amagarNoFact = false;
+    public bool showModal { get; set; } = false;
+    public string codi { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -100,19 +114,6 @@
             pageNumber = p;
             await readList();
         }
-    }
-
-    async Task readList()
-    {
-        if (amagarNoFact)
-        {
-            articles = await ArticlesDbContext.Articles.Select(a => new ArticleRed() { CodiArticle = a.CodiArticle, CodiFamilia = a.CodiFamilia, Descripcio = a.Descripcio, Envas = a.Envas, Pes = a.Pes, NoFacturar = a.NoFacturar, PreuVenda = a.PreuVenda, Observacions = a.Observacions}).Where(a => a.NoFacturar == false).OrderBy(a => a.CodiArticle).Skip((pageNumber-1) * pageSize).Take(pageSize).ToListAsync();
-        }
-        else
-        {
-            articles = await ArticlesDbContext.Articles.Select(a => new ArticleRed() { CodiArticle = a.CodiArticle, CodiFamilia = a.CodiFamilia, Descripcio = a.Descripcio, Envas = a.Envas, Pes = a.Pes, NoFacturar = a.NoFacturar, PreuVenda = a.PreuVenda, Observacions = a.Observacions}).OrderBy(a => a.CodiArticle).Skip((pageNumber-1) * pageSize).Take(pageSize).ToListAsync();
-        }
-        StateHasChanged();
     }
 
     async Task canviarFacturables(object valor)
@@ -132,6 +133,33 @@
         count--;
         //max = Convert.ToInt32(Math.Ceiling(count / Convert.ToDecimal(pageSize)));
         await readList();
+    }
+
+    async Task crear()
+    {
+        codi = "";
+        showModal = true;
+        await readList();
+    }
+
+    async Task editar(string codiFam)
+    {
+        codi = codiFam;
+        showModal = true;
+        await readList();
+    }
+
+    async Task readList()
+    {
+        if (amagarNoFact)
+        {
+            articles = await ArticlesDbContext.Articles.Select(a => new ArticleRed() { CodiArticle = a.CodiArticle, CodiFamilia = a.CodiFamilia, Descripcio = a.Descripcio, Envas = a.Envas, Pes = a.Pes, NoFacturar = a.NoFacturar, PreuVenda = a.PreuVenda, Observacions = a.Observacions}).Where(a => a.NoFacturar == false).OrderBy(a => a.CodiArticle).Skip((pageNumber-1) * pageSize).Take(pageSize).ToListAsync();
+        }
+        else
+        {
+            articles = await ArticlesDbContext.Articles.Select(a => new ArticleRed() { CodiArticle = a.CodiArticle, CodiFamilia = a.CodiFamilia, Descripcio = a.Descripcio, Envas = a.Envas, Pes = a.Pes, NoFacturar = a.NoFacturar, PreuVenda = a.PreuVenda, Observacions = a.Observacions}).OrderBy(a => a.CodiArticle).Skip((pageNumber-1) * pageSize).Take(pageSize).ToListAsync();
+        }
+        StateHasChanged();
     }
 
     public class ArticleRed

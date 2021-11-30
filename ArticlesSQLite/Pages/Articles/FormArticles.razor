@@ -1,6 +1,4 @@
-﻿@page "/articles/form/{codi}"
-@page "/articles/form"
-@using Microsoft.EntityFrameworkCore
+﻿@using Microsoft.EntityFrameworkCore
 <h3>FormArticles</h3>
 
 <EditForm Model="article" OnValidSubmit="submit">
@@ -98,15 +96,24 @@
     <ValidationSummary />
 
     <button class="btn btn-success" type="submit">Save</button>
-    <button @onclick="cancel" class="btn btn-secondary">Cancel</button>
+    <a @onclick="hideModal" class="btn btn-secondary">Cancel</a>
 </EditForm>
 
 @code {
-    [Inject] NavigationManager NavigationManager { get; set; }
-    [Inject] ArticlesDbContext ArticlesDbContext { get; set; }
+    [Inject] 
+    NavigationManager NavigationManager { get; set; }
+    [Inject] 
+    ArticlesDbContext ArticlesDbContext { get; set; }
     private Article article;
     private IEnumerable<String> codisFamilia;
-    [Parameter] public string codi { get; set; }
+    [Parameter]
+    public string codi { get; set; }
+    [Parameter]
+    public bool showModal { get; set; }
+    [Parameter]
+    public EventCallback<bool> ShowModalChanged { get; set; }
+    [Parameter]
+    public EventCallback<bool> OnSubmit { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -117,7 +124,6 @@
             article = new();
             codi = "";
         }
-
     }
 
     private async Task submit(){
@@ -130,11 +136,13 @@
             ArticlesDbContext.Articles.Update(article);
         }
         await ArticlesDbContext.SaveChangesAsync();
-        NavigationManager.NavigateTo("/articles");
+        await hideModal();
+        await OnSubmit.InvokeAsync(true);
     }
 
-    private void cancel()
+    private async Task hideModal()
     {
-        NavigationManager.NavigateTo("/articles");
+        showModal = false;
+        await ShowModalChanged.InvokeAsync(showModal);
     }
 }
