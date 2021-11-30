@@ -2,16 +2,26 @@
 @using Microsoft.EntityFrameworkCore
 <h3>LlistaArticles</h3>
 
+<div class="form-check">
+  <input class="form-check-input" type="checkbox" @onchange="@(async (e) =>{ await canviarFacturables(e.Value);})" id="noFact">
+  <label class="form-check-label" for="noFact">
+    Amagar no facturables
+  </label>
+</div>
+
+<a href="/articles/form" class="btn btn-success">Crear</a>
 <table class="table table-responsive table-striped">
     <thead>
         <tr>
             <th scope="col">CodiArticle</th>
-            <th scope="col">CodiFamilia</th>
             <th scope="col">Descripcio</th>
+            <th scope="col">CodiFamilia</th>
+            <th scope="col">DescripcióFamilia</th>
             <th scope="col">Envas</th>
             <th scope="col">Pes</th>
             <th scope="col">PreuVenda</th>
             <th scope="col">Observacions</th>
+            <th scope="col">Opcions</th>
         </tr>
     </thead>
     <tbody>
@@ -19,15 +29,38 @@
         {
             foreach (var article in articles)
             {
-                <tr>
-                    <th scope="row">@article.CodiArticle</th>
-                    <td>@article.CodiFamilia</td>
-                    <td>@article.Descripcio</td>
-                    <td>@article.Envas</td>
-                    <td>@article.Pes</td>
-                    <td>@article.PreuVenda</td>
-                    <td>@article.Observacions</td>
-                </tr>
+                @if(article.NoFacturar == true)
+                {
+                    <tr class="table-danger">
+                        <th scope="row">@article.CodiArticle</th>
+                        <td>@article.Descripcio</td>
+                        <td>@article.CodiFamilia</td>
+                        <td>@ArticlesDbContext.Families.Where(f => f.CodiFamilia == article.CodiFamilia).Select(f => f.Descripcio).SingleOrDefault()</td>
+                        <td>@article.Envas</td>
+                        <td>@article.Pes</td>
+                        <td>@article.PreuVenda</td>
+                        <td>@article.Observacions</td>
+                        <td>
+                            <a href="/articles/form/@article.CodiArticle" class="btn btn-warning">Editar</a>
+                            <button class="btn btn-danger" @onclick="() => eliminar(article)">Eliminar</button>
+                        </td>
+                    </tr>
+                }else{
+                    <tr>
+                        <th scope="row">@article.CodiArticle</th>
+                        <td>@article.Descripcio</td>
+                        <td>@article.CodiFamilia</td>
+                        <td>@ArticlesDbContext.Families.Where(f => f.CodiFamilia == article.CodiFamilia).Select(f => f.Descripcio).SingleOrDefault()</td>
+                        <td>@article.Envas</td>
+                        <td>@article.Pes</td>
+                        <td>@article.PreuVenda</td>
+                        <td>@article.Observacions</td>
+                        <td>
+                            <a href="/articles/form/@article.CodiArticle" class="btn btn-warning">Editar</a>
+                            <button class="btn btn-danger" @onclick="() => eliminar(article)">Eliminar</button>
+                        </td>
+                    </tr>
+                }
             }
         }
     </tbody>
@@ -44,26 +77,76 @@
 </nav>
 
 @code {
+    [Inject] IJSRuntime JSRuntime { get; set; }
     [Inject] ArticlesDbContext ArticlesDbContext { get; set; }
-    private List<Article> _articles = new List<Article>();
-    private IEnumerable<Article> articles;
+    private IEnumerable<ArticleRed> articles;
     private int pageSize = 15;
     private int max = 10;
     private int pageNumber = 1;
+    private int count;
+    private bool amagarNoFact = false;
+
     protected override async Task OnInitializedAsync()
     {
-        _articles = await ArticlesDbContext.Articles.ToListAsync();
-        articles = _articles.Take(pageSize);
-        //max = Convert.ToInt32(Math.Ceiling(_articles.Count() / Convert.ToDecimal(pageSize)));
+        count = ArticlesDbContext.Articles.Count();
+        await readList();
+        //max = Convert.ToInt32(Math.Ceiling(count / Convert.ToDecimal(pageSize)));
     }
 
-    void savePageNumber(int p)
+    async Task savePageNumber(int p)
     {
         if (p >= 1 && p <= max)
         {
             pageNumber = p;
-            articles = _articles.Skip((p-1) * pageSize).Take(pageSize);
-            StateHasChanged();
+            await readList();
         }
+    }
+
+    async Task readList()
+    {
+        if (amagarNoFact)
+        {
+            articles = await ArticlesDbContext.Articles.Select(a => new ArticleRed() { CodiArticle = a.CodiArticle, CodiFamilia = a.CodiFamilia, Descripcio = a.Descripcio, Envas = a.Envas, Pes = a.Pes, NoFacturar = a.NoFacturar, PreuVenda = a.PreuVenda, Observacions = a.Observacions}).Where(a => a.NoFacturar == false).OrderBy(a => a.CodiArticle).Skip((pageNumber-1) * pageSize).Take(pageSize).ToListAsync();
+        }
+        else
+        {
+            articles = await ArticlesDbContext.Articles.Select(a => new ArticleRed() { CodiArticle = a.CodiArticle, CodiFamilia = a.CodiFamilia, Descripcio = a.Descripcio, Envas = a.Envas, Pes = a.Pes, NoFacturar = a.NoFacturar, PreuVenda = a.PreuVenda, Observacions = a.Observacions}).OrderBy(a => a.CodiArticle).Skip((pageNumber-1) * pageSize).Take(pageSize).ToListAsync();
+        }
+        StateHasChanged();
+    }
+
+    async Task canviarFacturables(object valor)
+    {
+        amagarNoFact = (bool)valor;
+        await readList();
+    }
+
+    async Task eliminar(ArticleRed articleRed)
+    {
+        if (!await JSRuntime.InvokeAsync<bool>("confirm", $"Vols eliminar l'article '{articleRed.Descripcio}'?"))
+            return;
+
+        Article article = ArticlesDbContext.Articles.Where(a => a.CodiArticle == articleRed.CodiArticle).SingleOrDefault();
+        ArticlesDbContext.Articles.Remove(article);
+        await ArticlesDbContext.SaveChangesAsync();
+        count--;
+        //max = Convert.ToInt32(Math.Ceiling(count / Convert.ToDecimal(pageSize)));
+        await readList();
+    }
+
+    public class ArticleRed
+    {
+        public ArticleRed()
+        {
+        }
+
+        public string CodiArticle { get; set; }
+        public string CodiFamilia { get; set; }
+        public string Descripcio { get; set; }
+        public int Envas { get; set; }
+        public decimal Pes { get; set; }
+        public bool NoFacturar { get; set; }
+        public decimal PreuVenda { get; set; }
+        public string Observacions { get; set; }
     }
 }

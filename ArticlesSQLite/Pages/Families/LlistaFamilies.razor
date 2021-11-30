@@ -2,6 +2,15 @@
 @using Microsoft.EntityFrameworkCore
 <h3>LlistaFamilies</h3>
 
+@if (showAlert)
+{
+    <Alert Style="Alert.AlertStyle.Warning">
+        <ChildContent>
+        No es pot eliminar
+        </ChildContent>
+    </Alert>
+}
+
 <a href="/families/form" class="btn btn-success">Crear</a>
 <table class="table table-responsive table-striped">
     <thead>
@@ -42,38 +51,51 @@
 @code {
     [Inject] ArticlesDbContext ArticlesDbContext { get; set; }
     [Inject] IJSRuntime JSRuntime { get; set; }
-    private List<Familia> _families = new List<Familia>();
     private IEnumerable<Familia> families;
     private int pageSize = 15;
     private int max;
     private int pageNumber = 1;
+    private int count;
+    private bool showAlert = false;
 
     protected override async Task OnInitializedAsync()
     {
-        _families = await ArticlesDbContext.Families.ToListAsync();
-        families = _families.Take(pageSize);
-        max = Convert.ToInt32(Math.Ceiling(_families.Count() / Convert.ToDecimal(pageSize)));
+        count = ArticlesDbContext.Families.Count();
+        max = Convert.ToInt32(Math.Ceiling(count / Convert.ToDecimal(pageSize)));
+        await readList();
     }
 
-    void savePageNumber(int p)
+    async Task savePageNumber(int p)
     {
         if (p >= 1 && p <= max)
         {
             pageNumber = p;
-            families = _families.Skip((p-1) * pageSize).Take(pageSize);
-            StateHasChanged();
+            await readList();
         }
     }
 
     async Task eliminar(Familia familia)
     {
+        if (ArticlesDbContext.Articles.FirstOrDefault(a => a.CodiFamilia == familia.CodiFamilia) != null)
+        {
+            showAlert = true;
+            return;
+        }
+        showAlert = false;
+
         if (!await JSRuntime.InvokeAsync<bool>("confirm", $"Vols eliminar la familia d'articles '{familia.Descripcio}'?"))
             return;
 
         ArticlesDbContext.Families.Remove(familia);
         await ArticlesDbContext.SaveChangesAsync();
-        _families.Remove(familia);
-        families = _families.Skip((pageNumber-1) * pageSize).Take(pageSize);
+        count--;
+        max = Convert.ToInt32(Math.Ceiling(count / Convert.ToDecimal(pageSize)));
+        await readList();
+    }
+
+    async Task readList()
+    {
+        families = await ArticlesDbContext.Families.OrderBy(f => f.CodiFamilia).Skip((pageNumber-1) * pageSize).Take(pageSize).ToListAsync();
         StateHasChanged();
     }
 }

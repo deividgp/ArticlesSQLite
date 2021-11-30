@@ -27,6 +27,16 @@
     private Familia familia;
     [Parameter] public string codi { get; set; }
 
+    protected override async Task OnInitializedAsync()
+    {
+        familia = await ArticlesDbContext.Families.FindAsync(codi);
+        if (familia == null)
+        {
+            familia = new();
+            codi = "";
+        }
+    }
+
     private async Task submit(){
         if (codi == "")
         {
@@ -38,16 +48,6 @@
         }
         await ArticlesDbContext.SaveChangesAsync();
         NavigationManager.NavigateTo("/families");
-    }
-
-    protected override async Task OnInitializedAsync()
-    {
-        familia = await ArticlesDbContext.Families.FindAsync(codi);
-        if (familia == null)
-        {
-            familia = new();
-            codi = "";
-        }
     }
 
     private void cancel()
