@@ -61,8 +61,10 @@
 </nav>
 
 @code {
-    [Inject] ArticlesDbContext ArticlesDbContext { get; set; }
-    [Inject] IJSRuntime JSRuntime { get; set; }
+    [Inject]
+    ArticlesDbContext ArticlesDbContext { get; set; }
+    [Inject]
+    IJSRuntime JSRuntime { get; set; }
     private IEnumerable<Familia> families;
     private int pageSize = 15;
     private int max;

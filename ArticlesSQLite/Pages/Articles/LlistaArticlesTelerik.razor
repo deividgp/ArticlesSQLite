@@ -1,0 +1,206 @@
+﻿@page "/articlestelerik"
+@using Microsoft.EntityFrameworkCore
+@using Telerik.Blazor.Components
+@using Telerik.DataSource
+@using Telerik.Blazor
+<h3>LlistaArticlesTelerik</h3>
+
+<TelerikNotification @ref="@Notification" Class="MyTelerikNotification"></TelerikNotification>
+
+@if (articles != null){
+    <TelerikGrid Data="@articles"
+                    Resizable="true"
+                    Reorderable="true"
+                    Pageable="true"
+                    PageSize="15"
+                    Sortable="true"
+                    Groupable="true"
+                    SelectionMode="GridSelectionMode.Multiple"
+                    OnDelete="DeleteArticle"
+                    FilterMode="@GridFilterMode.FilterMenu">
+        <GridToolBar>
+            <GridCommandButton OnClick="@(() => SelectArticle(null) )" Icon="add">Add</GridCommandButton>
+            <TelerikCheckBox Id="myCheckBox" @bind-Value="@amagarNoFact" OnChange="@ReadList" />
+            <label for="myCheckBox">Amagar no facturables</label>
+        </GridToolBar>
+        <GridColumns>
+            <GridCheckboxColumn SelectAllMode="GridSelectAllMode.All"></GridCheckboxColumn>
+            <GridColumn Field="@nameof(ArticleRed.CodiArticle)" Title="Codi article"></GridColumn>
+            <GridColumn Field="@nameof(ArticleRed.Descripcio)" Title="Descripció"></GridColumn>
+            <GridColumn Field="@nameof(ArticleRed.CodiFamilia)" Title="Codi familia"></GridColumn>
+            <GridColumn Title="Descripció familia">
+                <Template>
+                    @{
+                        ArticleRed art = (ArticleRed)context;
+                        <span>@ArticlesDbContext.Families.Where(f => f.CodiFamilia == art.CodiFamilia).Select(f => f.Descripcio).SingleOrDefault()</span>
+                    }
+                </Template>
+            </GridColumn>
+            <GridColumn Field="@nameof(ArticleRed.Envas)"></GridColumn>
+            <GridColumn Field="@nameof(ArticleRed.Pes)" Title="Pes"></GridColumn>
+            <GridColumn Field="@nameof(ArticleRed.PreuVenda)" Title="Preu venda"></GridColumn>
+            <GridColumn Field="@nameof(ArticleRed.Observacions)"></GridColumn>
+            <GridCommandColumn>
+                <GridCommandButton OnClick="@((args)=> SelectArticle(args.Item as ArticleRed))" Icon="edit">Edit</GridCommandButton>
+                <GridCommandButton Command="Delete" Icon="delete">Delete</GridCommandButton>
+            </GridCommandColumn>
+        </GridColumns>
+    </TelerikGrid>
+
+    <TelerikWindow Visible="@(articleEdi != null)" Modal="true">
+        <WindowTitle>
+            @{
+                if (articleEdi.CodiArticle == "")
+                {
+                    <strong>Add Employee</strong>
+                }
+                else
+                {
+                    <strong>Edit Employee</strong>
+                }
+            }
+        </WindowTitle>
+        <WindowContent>
+            <TelerikForm Model="@articleEdi" OnValidSubmit="@Save" 
+                         Columns="3" Width="600px" ColumnSpacing="50px"
+                         ValidationMessageType="@FormValidationMessageType.Tooltip">
+                <FormValidation>
+                    <DataAnnotationsValidator />
+                    <TelerikValidationSummary />
+                </FormValidation>
+                <FormButtons>
+                    <TelerikButton Icon="save" Primary="true" ButtonType="@ButtonType.Submit">Save</TelerikButton>
+                    <TelerikButton Icon="cancel" OnClick="@ClearSelection" ButtonType="@ButtonType.Button">Cancel</TelerikButton>
+                </FormButtons>
+            </TelerikForm>
+        </WindowContent>
+    </TelerikWindow>
+}
+
+@code {
+    [Inject]
+    ArticlesDbContext ArticlesDbContext { get; set; }
+    private IEnumerable<ArticleRed> articles;
+    public TelerikNotification Notification { get; set; }
+    [CascadingParameter]
+    public DialogFactory Dialogs { get; set; }
+    private bool amagarNoFact = false;
+    ArticleRed articleRed { get; set; }
+    Article articleEdi { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ReadList();
+    }
+
+    private async Task CreateArticle(GridCommandEventArgs args)
+    {
+        try
+        {
+            Familia familiaAux1 = (Familia)args.Item;
+            Familia familiaAux2 = new Familia() {
+                CodiFamilia = familiaAux1.CodiFamilia,
+                Descripcio = familiaAux1.Descripcio
+            };
+            await ArticlesDbContext.AddAsync(familiaAux2);
+            await ArticlesDbContext.SaveChangesAsync();
+            await ReadList();
+        }
+        catch
+        {
+            Notification.Show(new NotificationModel()
+            {
+                Text = "No pots crear un element amb una clau primària existent",
+                ThemeColor = ThemeColors.Error
+            });
+        }
+    }
+
+    private async Task UpdateArticle(GridCommandEventArgs args)
+    {
+        Article articleAux1 = (Article)args.Item;
+        Article articleAux2 = await ArticlesDbContext.Articles.FindAsync(articleAux1.CodiFamilia);
+        //familiaAux2.CodiFamilia = familiaAux1.CodiFamilia;
+        //familiaAux2.Descripcio = familiaAux1.Descripcio;
+        //ArticlesDbContext.Update(familiaAux2);
+        //await ArticlesDbContext.SaveChangesAsync();
+        //await ReadList();
+    }
+
+    void SelectArticle(ArticleRed item)
+    {
+        if (item != null)
+        {
+            articleRed = item;
+            articleEdi = ArticlesDbContext.Articles.Find(item.CodiArticle);
+        }
+        else
+        {
+            articleEdi = new ();
+        }
+        StateHasChanged();
+    }
+
+    private async Task DeleteArticle(GridCommandEventArgs args)
+    {
+        ArticleRed articleAux1 = (ArticleRed)args.Item;
+
+        bool isConfirmed = await Dialogs.ConfirmAsync($"Vols eliminar la familia d'articles {articleAux1.Descripcio}?", "Eliminar familia");
+
+        if (!isConfirmed)
+        {
+            return;
+        }
+
+        Article articleAux2 = await ArticlesDbContext.Articles.FindAsync(articleAux1.CodiFamilia);
+        ArticlesDbContext.Articles.Remove(articleAux2);
+        await ArticlesDbContext.SaveChangesAsync();
+        await ReadList();
+    }
+
+    void ClearSelection()
+    {
+        articleRed = null;
+        articleEdi = null;
+    }
+
+    void Save()
+    {
+        if(articleRed != null)
+        {
+            ArticlesDbContext.Articles.Update(articleEdi);
+        }
+        else
+        {
+            ArticlesDbContext.Articles.Add(articleEdi);
+        }
+        ClearSelection();
+    }
+
+    private async Task ReadList()
+    {
+        if (amagarNoFact)
+        {
+            articles = await ArticlesDbContext.Articles.Select(a => new ArticleRed() { CodiArticle = a.CodiArticle, CodiFamilia = a.CodiFamilia, Descripcio = a.Descripcio, Envas = a.Envas, Pes = a.Pes, NoFacturar = a.NoFacturar, PreuVenda = a.PreuVenda, Observacions = a.Observacions}).Where(a => a.NoFacturar == false).OrderBy(a => a.CodiArticle).ToListAsync();
+        }
+        else
+        {
+            articles = await ArticlesDbContext.Articles.Select(a => new ArticleRed() { CodiArticle = a.CodiArticle, CodiFamilia = a.CodiFamilia, Descripcio = a.Descripcio, Envas = a.Envas, Pes = a.Pes, NoFacturar = a.NoFacturar, PreuVenda = a.PreuVenda, Observacions = a.Observacions}).OrderBy(a => a.CodiArticle).ToListAsync();
+        }
+        StateHasChanged();
+    }
+
+    public class ArticleRed
+    {
+        public ArticleRed() { }
+
+        public string CodiArticle { get; set; }
+        public string CodiFamilia { get; set; }
+        public string Descripcio { get; set; }
+        public int Envas { get; set; }
+        public decimal Pes { get; set; }
+        public bool NoFacturar { get; set; }
+        public decimal PreuVenda { get; set; }
+        public string Observacions { get; set; }
+    }
+}

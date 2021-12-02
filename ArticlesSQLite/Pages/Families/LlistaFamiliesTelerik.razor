@@ -1,0 +1,119 @@
+﻿@page "/familiestelerik"
+@using Microsoft.EntityFrameworkCore
+@using Telerik.Blazor.Components
+@using Telerik.DataSource
+@using Telerik.Blazor
+<h3>LlistaFamiliesTelerik</h3>
+
+<TelerikNotification @ref="@Notification" Class="MyTelerikNotification"></TelerikNotification>
+
+@if (families != null){
+    <TelerikGrid Data="@families"
+                    Resizable="true"
+                    Reorderable="true"
+                    Pageable="true"
+                    PageSize="15"
+                    Sortable="true"
+                    Groupable="true"
+                    SelectionMode="GridSelectionMode.Multiple"
+                    OnDelete="DeleteFamilia"
+                    OnUpdate="UpdateFamilia"
+                    OnCreate="CreateFamilia"
+                    EditMode="@GridEditMode.Popup"
+                    FilterMode="@GridFilterMode.FilterMenu">
+        <GridToolBar>
+            <GridCommandButton Command="Add" Icon="add">Add</GridCommandButton>
+        </GridToolBar>
+        <GridColumns>
+            <GridCheckboxColumn SelectAllMode="GridSelectAllMode.All"></GridCheckboxColumn>
+            <GridColumn Field="@nameof(Familia.CodiFamilia)" Title="Codi familia"></GridColumn>
+            <GridColumn Field="@nameof(Familia.Descripcio)" Title="Descripció"></GridColumn>
+            <GridCommandColumn>
+                <GridCommandButton Command="Save" Icon="save" ShowInEdit="true">Save</GridCommandButton>
+                <GridCommandButton Command="Cancel" Icon="cancel" ShowInEdit="true">Cancel</GridCommandButton>
+                <GridCommandButton Command="Edit" Icon="edit">Edit</GridCommandButton>
+                <GridCommandButton Command="Delete" Icon="delete">Delete</GridCommandButton>
+            </GridCommandColumn>
+        </GridColumns>
+    </TelerikGrid>
+}
+
+@code {
+    [Inject] 
+    ArticlesDbContext ArticlesDbContext { get; set; }
+    public List<Familia> families { get; set; } = new List<Familia>();
+    public TelerikNotification Notification { get; set; }
+    [CascadingParameter]
+    public DialogFactory Dialogs { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ReadList();
+    }
+
+    private async Task CreateFamilia(GridCommandEventArgs args)
+    {
+        try
+        {
+            Familia familiaAux1 = (Familia)args.Item;
+            Familia familiaAux2 = new Familia() {
+                CodiFamilia = familiaAux1.CodiFamilia,
+                Descripcio = familiaAux1.Descripcio
+            };
+            await ArticlesDbContext.AddAsync(familiaAux2);
+            await ArticlesDbContext.SaveChangesAsync();
+            await ReadList();
+        }
+        catch
+        {
+            Notification.Show(new NotificationModel()
+            {
+                Text = "No pots crear un element amb una clau primària existent",
+                ThemeColor = ThemeColors.Error
+            });
+        }
+    }
+
+    private async Task UpdateFamilia(GridCommandEventArgs args)
+    {
+        var familiaAux1 = (Familia)args.Item;
+        var familiaAux2 = await ArticlesDbContext.Families.FindAsync(familiaAux1.CodiFamilia);
+        familiaAux2.CodiFamilia = familiaAux1.CodiFamilia;
+        familiaAux2.Descripcio = familiaAux1.Descripcio;
+        ArticlesDbContext.Update(familiaAux2);
+        await ArticlesDbContext.SaveChangesAsync();
+        await ReadList();
+    }
+
+    private async Task DeleteFamilia(GridCommandEventArgs args)
+    {
+        Familia familiaAux1 = (Familia)args.Item;
+
+        if (ArticlesDbContext.Articles.FirstOrDefault(a => a.CodiFamilia == familiaAux1.CodiFamilia) != null)
+        {
+            Notification.Show(new NotificationModel()
+            {
+                Text = "No es pot eliminar perquè aquesta familia té articles associats",
+                ThemeColor = ThemeColors.Error
+            });
+            return;
+        }
+
+        bool isConfirmed = await Dialogs.ConfirmAsync($"Vols eliminar la familia d'articles {familiaAux1.Descripcio}?", "Eliminar familia");
+
+        if (!isConfirmed)
+        {
+            return;
+        }
+
+        Familia familiaAux2 = await ArticlesDbContext.Families.FindAsync(familiaAux1.CodiFamilia);
+        ArticlesDbContext.Families.Remove(familiaAux2);
+        await ArticlesDbContext.SaveChangesAsync();
+        await ReadList();
+    }
+
+    private async Task ReadList()
+    {
+        families = await ArticlesDbContext.Families.AsNoTracking().OrderBy(f => f.CodiFamilia).ToListAsync();
+    }
+}
