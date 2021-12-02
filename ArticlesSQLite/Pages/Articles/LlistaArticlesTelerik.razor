@@ -116,17 +116,6 @@
         }
     }
 
-    private async Task UpdateArticle(GridCommandEventArgs args)
-    {
-        Article articleAux1 = (Article)args.Item;
-        Article articleAux2 = await ArticlesDbContext.Articles.FindAsync(articleAux1.CodiFamilia);
-        //familiaAux2.CodiFamilia = familiaAux1.CodiFamilia;
-        //familiaAux2.Descripcio = familiaAux1.Descripcio;
-        //ArticlesDbContext.Update(familiaAux2);
-        //await ArticlesDbContext.SaveChangesAsync();
-        //await ReadList();
-    }
-
     void SelectArticle(ArticleRed item)
     {
         if (item != null)
@@ -164,16 +153,30 @@
         articleEdi = null;
     }
 
-    void Save()
+    private async Task Save()
     {
-        if(articleRed != null)
+        try
         {
-            ArticlesDbContext.Articles.Update(articleEdi);
+            if(articleRed != null)
+            {
+                ArticlesDbContext.Articles.Update(articleEdi);
+            }
+            else
+            {
+                ArticlesDbContext.Articles.Add(articleEdi);
+            }
+            await ArticlesDbContext.SaveChangesAsync();
+            await ReadList();
         }
-        else
+        catch
         {
-            ArticlesDbContext.Articles.Add(articleEdi);
+            Notification.Show(new NotificationModel()
+            {
+                Text = "No pots crear un element amb una clau primària existent",
+                ThemeColor = ThemeColors.Error
+            });
         }
+        
         ClearSelection();
     }
 
