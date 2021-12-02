@@ -8,6 +8,10 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
+
+// Add Telerik Blazor server side services
+builder.Services.AddTelerikBlazor();
+
 builder.Services.AddSingleton<WeatherForecastService>();
 builder.Services.AddDbContext<ArticlesDbContext>();
 

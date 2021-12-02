@@ -1,4 +1,4 @@
-﻿@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.AspNetCore.Components.Web
 @namespace ArticlesSQLite.Pages
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 
@@ -12,6 +12,8 @@
     <link href="css/site.css" rel="stylesheet" />
     <link href="ArticlesSQLite.styles.css" rel="stylesheet" />
     <component type="typeof(HeadOutlet)" render-mode="ServerPrerendered" />
+    <link rel="stylesheet" href="_content/Telerik.UI.for.Blazor.Trial/css/kendo-theme-default/all.css" />
+    <script src="_content/Telerik.UI.for.Blazor.Trial/js/telerik-blazor.js" defer></script>
 </head>
 <body>
     @RenderBody()
