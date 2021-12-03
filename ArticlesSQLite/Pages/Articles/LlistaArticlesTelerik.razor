@@ -50,24 +50,76 @@
     <TelerikWindow Visible="@(articleEdi != null)" Modal="true">
         <WindowTitle>
             @{
-                if (articleEdi.CodiArticle == "")
+                if (@articleRed == null)
                 {
-                    <strong>Add Employee</strong>
+                    <strong>Afegir article</strong>
                 }
                 else
                 {
-                    <strong>Edit Employee</strong>
+                    <strong>Editar article</strong>
                 }
             }
         </WindowTitle>
         <WindowContent>
             <TelerikForm Model="@articleEdi" OnValidSubmit="@Save" 
-                         Columns="3" Width="600px" ColumnSpacing="50px"
+                         Width="500px"
                          ValidationMessageType="@FormValidationMessageType.Tooltip">
                 <FormValidation>
                     <DataAnnotationsValidator />
                     <TelerikValidationSummary />
                 </FormValidation>
+                <FormItems>
+                    <TelerikTabStrip TabPosition="Telerik.Blazor.TabPosition.Top">
+                        <TabStripTab Title="Codis">
+                            <FormItem Field="@nameof(Article.CodiArticle)" Enabled="true" LabelText="Codi article"></FormItem>
+                            <FormItem>
+                                <Template>
+                                    <label for="codifamilia">Codi familia</label>
+                                    <TelerikDropDownList Id="codifamilia" @bind-Value="@articleEdi.CodiFamilia" Data="@codisFamilia"></TelerikDropDownList>
+                                </Template>
+                            </FormItem>
+                            <FormItem Field="@nameof(Article.CodiIVA)" Enabled="true" LabelText="CodiIVA"></FormItem>
+                        </TabStripTab>
+                        <TabStripTab Title="Dates">
+                            <FormItem Field="@nameof(Article.DataAlta)" Enabled="true" LabelText="DataAlta"></FormItem>
+                            <FormItem Field="@nameof(Article.DataPendRebre)" Enabled="true" LabelText="DataPendRebre"></FormItem>
+                            <FormItem Field="@nameof(Article.DataUltSortida)" Enabled="true" LabelText="DataUltSortida"></FormItem>
+                            <FormItem Field="@nameof(Article.DataCost)" Enabled="true" LabelText="DataCost"></FormItem>
+                        </TabStripTab>
+                        <TabStripTab Title="Preus">
+                            <FormItem Field="@nameof(Article.PreuCostMig)" Enabled="true" LabelText="PreuCostMig"></FormItem>
+                            <FormItem Field="@nameof(Article.PreuCostUltim)" Enabled="true" LabelText="PreuCostUltim"></FormItem>
+                            <FormItem Field="@nameof(Article.PreuVenda)" Enabled="true" LabelText="PreuVenda"></FormItem>
+                        </TabStripTab>
+                        <TabStripTab Title="Stock">
+                            <FormItem Field="@nameof(Article.StockMinim)" Enabled="true" LabelText="StockMinim"></FormItem>
+                            <FormItem Field="@nameof(Article.StockRuptura)" Enabled="true" LabelText="StockRuptura"></FormItem>
+                            <FormItem Field="@nameof(Article.ControlStock)" Enabled="true" LabelText="ControlStock"></FormItem>
+                            <FormItem Field="@nameof(Article.StockPendRebre)" Enabled="true" LabelText="StockPendRebre"></FormItem>
+                            <FormItem Field="@nameof(Article.StockCost)" Enabled="true" LabelText="StockCost"></FormItem>
+                        </TabStripTab>
+                        <TabStripTab Title="Altres">
+                            <FormItem Field="@nameof(Article.Envas)" Enabled="true" LabelText="Envas"></FormItem>
+                            <FormItem Field="@nameof(Article.Pes)" Enabled="true" LabelText="Pes"></FormItem>
+                            <FormItem Field="@nameof(Article.NoFacturar)" Enabled="true" LabelText="NoFacturar"></FormItem>
+                            <FormItem Field="@nameof(Article.NoSortirInventaris)" Enabled="true" LabelText="NoSortirInventaris"></FormItem>
+                            <FormItem Field="@nameof(Article.Comisio)" Enabled="true" LabelText="Comisio"></FormItem>
+                            <FormItem>
+                                <Template>
+                                    <label for="descripcio">Descripció</label>
+                                    <TelerikTextArea Id="descripcio" @bind-Value="@articleEdi.Descripcio"></TelerikTextArea>
+                                </Template>
+                            </FormItem>
+                            <FormItem>
+                                <Template>
+                                    <label for="observacions">Observacions</label>
+                                    <TelerikTextArea Id="observacions" @bind-Value="@articleEdi.Observacions"></TelerikTextArea>
+                                </Template>
+                            </FormItem>
+                        </TabStripTab>
+                    </TelerikTabStrip>
+                </FormItems>
+
                 <FormButtons>
                     <TelerikButton Icon="save" Primary="true" ButtonType="@ButtonType.Submit">Save</TelerikButton>
                     <TelerikButton Icon="cancel" OnClick="@ClearSelection" ButtonType="@ButtonType.Button">Cancel</TelerikButton>
@@ -87,6 +139,7 @@
     private bool amagarNoFact = false;
     ArticleRed articleRed { get; set; }
     Article articleEdi { get; set; }
+    private IEnumerable<String> codisFamilia;
 
     protected override async Task OnInitializedAsync()
     {
@@ -116,7 +169,7 @@
         }
     }
 
-    void SelectArticle(ArticleRed item)
+    private async Task SelectArticle(ArticleRed item)
     {
         if (item != null)
         {
@@ -127,6 +180,7 @@
         {
             articleEdi = new ();
         }
+        codisFamilia = await ArticlesDbContext.Families.Select(f => f.CodiFamilia).ToListAsync();
         StateHasChanged();
     }
 
@@ -141,7 +195,7 @@
             return;
         }
 
-        Article articleAux2 = await ArticlesDbContext.Articles.FindAsync(articleAux1.CodiFamilia);
+        Article articleAux2 = await ArticlesDbContext.Articles.FindAsync(articleAux1.CodiArticle);
         ArticlesDbContext.Articles.Remove(articleAux2);
         await ArticlesDbContext.SaveChangesAsync();
         await ReadList();

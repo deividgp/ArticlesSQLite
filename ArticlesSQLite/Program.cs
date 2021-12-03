@@ -13,7 +13,7 @@ builder.Services.AddServerSideBlazor();
 builder.Services.AddTelerikBlazor();
 
 builder.Services.AddSingleton<WeatherForecastService>();
-builder.Services.AddDbContext<ArticlesDbContext>();
+builder.Services.AddDbContextFactory<ArticlesDbContext>();
 
 var app = builder.Build();
 
