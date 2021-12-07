@@ -13,7 +13,14 @@
     <link href="ArticlesSQLite.styles.css" rel="stylesheet" />
     <component type="typeof(HeadOutlet)" render-mode="ServerPrerendered" />
     <link rel="stylesheet" href="_content/Telerik.UI.for.Blazor.Trial/css/kendo-theme-default/all.css" />
+
     <script src="_content/Telerik.UI.for.Blazor.Trial/js/telerik-blazor.js" defer></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://kendo.cdn.telerik.com/2020.3.1118/js/kendo.all.min.js"></script>
+
+    <script src="/api/reports/resources/js/telerikReportViewer"></script>
+
+    <script src="api/reportdesigner/designerresources/js/webReportDesigner-15.2.21.1125.min.js/"></script>
 </head>
 <body>
     @RenderBody()
@@ -30,5 +37,23 @@
     </div>
 
     <script src="_framework/blazor.server.js"></script>
+
+    @* Our Blazor app JS Interop file for working with the ReportViewer widget *@
+    <script src="_content/telerik.reportviewer.blazor.trial/interop.js" defer></script>
+
+    <script>
+        window.trvEventHandlers = {
+            exportBegin: function (e, args) {
+                console.log("This event handler will be called before exporting the report in " + args.format + " format.");
+            },
+            exportEnd: function (e, args) {
+                console.log("This event handler will be called after exporting the report.");
+                console.log("The exported report can be found at: " + window.location.origin + args.url);
+            }
+        }
+    </script>
+
+    @* Our Blazor app JS Interop file for working with the WebReportDesigner widget *@
+    <script src="_content/telerik.webreportdesigner.blazor.trial/telerikWebReportDesignerInterop.js" defer></script>
 </body>
 </html>
