@@ -13,6 +13,8 @@
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="6.0.0" />
     <PackageReference Include="System.Data.SQLite.Core" Version="1.0.115.5" />
+    <PackageReference Include="Telerik.Documents.Core.Trial" Version="2021.3.1109" />
+    <PackageReference Include="Telerik.Documents.Fixed.Trial" Version="2021.3.1109" />
     <PackageReference Include="Telerik.Reporting.Services.AspNetCore.Trial" Version="15.2.21.1125" />
     <PackageReference Include="Telerik.Reporting.Trial" Version="15.2.21.1125" />
     <PackageReference Include="Telerik.ReportViewer.Blazor.Trial" Version="15.2.21.1125" />
@@ -21,6 +23,7 @@
     <PackageReference Include="Telerik.UI.for.Blazor.Trial" Version="2.29.0" />
     <PackageReference Include="Telerik.WebReportDesigner.Blazor.Trial" Version="15.2.21.1125" />
     <PackageReference Include="Telerik.WebReportDesigner.Services.Trial" Version="15.2.21.1125" />
+    <PackageReference Include="Telerik.Zip.Trial" Version="2021.3.1109" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="wwwroot\reports\" />

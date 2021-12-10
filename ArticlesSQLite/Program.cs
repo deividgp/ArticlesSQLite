@@ -18,7 +18,7 @@ builder.Services.AddServerSideBlazor();
 builder.Services.AddTelerikBlazor();
 
 builder.Services.AddSingleton<WeatherForecastService>();
-builder.Services.AddDbContextFactory<ArticlesDbContext>();
+builder.Services.AddDbContext<ArticlesDbContext>();
 
 builder.Services.TryAddSingleton<IReportServiceConfiguration>(sp => new ReportServiceConfiguration
 {
