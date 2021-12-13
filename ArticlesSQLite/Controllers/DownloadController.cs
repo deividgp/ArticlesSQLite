@@ -20,7 +20,6 @@ namespace ArticlesSQLite.Controllers
         public FileContentResult DownloadFile(string tipus)
         {
             documentGenerator = new(ArticlesDbContext);
-            string pathName = Path.GetTempPath() + tipus + ".pdf";
             RadFixedDocument document = null;
             if (tipus == "families")
             {

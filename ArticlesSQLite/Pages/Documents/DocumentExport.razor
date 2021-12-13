@@ -1,8 +1,38 @@
 ﻿@page "/documentgenerator"
+@using ArticlesSQLite.Documents;
+@using Telerik.Windows.Documents.Fixed.FormatProviders.Pdf;
+@using Telerik.Windows.Documents.Fixed.Model;
 
 <h3>DocumentGenerator</h3>
+Using DownloadController
 <a href="/download/families" target="_blank">Generate families document</a>
 <a href="/download/articles" target="_blank">Generate articles document</a>
+<br /> <br />
+Using Blazor code and JS
+<TelerikButton OnClick="@(() => generateDownload("families"))">Generate families document</TelerikButton>
+<TelerikButton OnClick="@(() => generateDownload("articles"))">Generate articles document</TelerikButton>
 
 @code {
+    [Inject]
+    ArticlesDbContext ArticlesDbContext { get; set; }
+    DocumentGenerator documentGenerator;
+    [Inject]
+    IJSRuntime JSRuntime { get; set; }
+
+	async Task generateDownload(string tipus){
+		documentGenerator = new(ArticlesDbContext);
+        RadFixedDocument document = null;
+        if (tipus == "families")
+        {
+            document = documentGenerator.GenerateFamiliesDocumentAsync(true);
+        }
+        else if (tipus == "articles")
+        {
+            document = documentGenerator.GenerateArticlesDocumentAsync(true);
+        }
+
+        PdfFormatProvider provider = new();
+        
+        await JSRuntime.InvokeVoidAsync("saveFile", Convert.ToBase64String(provider.Export(document)), "application/pdf", tipus + ".pdf");
+	}
 }

@@ -17,6 +17,7 @@ builder.Services.AddServerSideBlazor();
 // Add Telerik Blazor server side services
 builder.Services.AddTelerikBlazor();
 
+builder.Services.AddScoped<FileConverter>();
 builder.Services.AddSingleton<WeatherForecastService>();
 builder.Services.AddDbContext<ArticlesDbContext>();
 
