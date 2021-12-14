@@ -13,6 +13,11 @@
                 <TelerikDropDownList Data="@SupportedExportFormats" @bind-Value="@exportFormat" PopupHeight="auto" Width="auto"></TelerikDropDownList>
             </div>
         </EditorCustomTool>
+        <EditorCustomTool Name="MergeTool">
+            <div style="margin-right: 50px">
+                <TelerikButton OnClick="@Merge" Icon="download"></TelerikButton>
+            </div>
+        </EditorCustomTool>
     </EditorCustomTools>
 </TelerikEditor>
 
@@ -41,7 +46,7 @@
         // add the custom tool for export
         Tools = new List<IEditorTool>(EditorToolSets.All);
         Tools.Insert(0, new CustomTool("ExportToPdfTool"));
-
+        Tools.Insert(1, new CustomTool("MergeTool"));
         // fetch the HTML content from import service
         EditorContent = fileConverter.GetHtmlString();
     }
@@ -56,6 +61,12 @@
             await ShowErrorNotification();
         }
     }
+
+    async Task Merge()
+    {
+        await fileConverter.ExportMailMerge(EditorContent);
+    }
+
 
 
     // these are for the issue notification only

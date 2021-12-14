@@ -6,6 +6,11 @@ using Telerik.Windows.Documents.Flow.FormatProviders.Rtf;
 using Telerik.Windows.Documents.Flow.FormatProviders.Txt;
 using Telerik.Windows.Documents.Flow.Model;
 using Microsoft.JSInterop;
+using Telerik.Windows.Documents.Flow.Model.Fields;
+using Telerik.Windows.Documents.Flow.Model.Editing;
+using System.Collections;
+using System.Collections.ObjectModel;
+using Telerik.Windows.Documents.Flow.TextSearch;
 
 namespace ArticlesSQLite.Data
 {
@@ -13,13 +18,18 @@ namespace ArticlesSQLite.Data
     {
         private IWebHostEnvironment Environment { get; set; }
         private IJSRuntime _js { get; set; }
+        private ArticlesDbContext articlesDbContext { get; set; }
+        private string[] entitats = {"Familia", "Article" };
+        private string[] campsFamilia = {"CodiFamilia", "Descripcio"};
+        private string[] campsArticle = { };
 
         // DI for the environment feature we need - path to the wwwroot folder to read the intial content,
         // and JS runtime for downloading the file to the browser
-        public FileConverter(IWebHostEnvironment env, IJSRuntime js)
+        public FileConverter(IWebHostEnvironment env, IJSRuntime js, ArticlesDbContext articlesDbContext)
         {
             Environment = env;
             _js = js;
+            this.articlesDbContext = articlesDbContext;
         }
 
         /// <summary>
@@ -49,6 +59,7 @@ namespace ArticlesSQLite.Data
             }
             catch (Exception ex)
             {
+                Console.WriteLine(ex.Message);
                 return null;
             }
         }
@@ -86,6 +97,100 @@ namespace ArticlesSQLite.Data
                 return false;
             }
             return true;
+        }
+
+        public async Task MailMerge(string htmlContent)
+        {
+            try
+            {
+                
+                // prepare a document with the HTML content that we can use for conversion
+                HtmlFormatProvider provider = new HtmlFormatProvider();
+                RadFlowDocument document = provider.Import(htmlContent);
+                RadFlowDocumentEditor editor = new RadFlowDocumentEditor(document);
+
+                foreach (string entitat in entitats)
+                {
+                    if (entitat == "Familia")
+                    {
+                        foreach (string campFamilia in campsFamilia)
+                        {
+                            string match = "[" + entitat + ":" + campFamilia + "]";
+                            if (editor.FindAll(match).Count > 0)
+                            {
+                                FieldInfo field = new(document);
+                                List<InlineBase> fieldInlines = new();
+                                fieldInlines.Add(field.Start);
+                                fieldInlines.Add(new Run(document) { Text = "MERGEFIELD " + campFamilia});
+                                fieldInlines.Add(field.Separator);
+                                fieldInlines.Add(new Run(document) { Text = "<<"+ campFamilia + ">>" });
+                                fieldInlines.Add(field.End);
+
+                                editor.ReplaceText(match, fieldInlines);
+                            }
+                        }
+                    }
+                }
+
+                RadFlowDocument mergedDoc = document.MailMerge(getData());
+                IFormatProvider<RadFlowDocument>  fileFormatProvider = new pdfProviderNamespace.PdfFormatProvider();
+                using (MemoryStream ms = new MemoryStream())
+                {
+                    fileFormatProvider.Export(mergedDoc, ms);
+                    await FileDownloader.Save(_js, ms.ToArray(), "application/pdf", "hghgt.pdf");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.Write(ex.Message);
+            }
+        }
+
+        public async Task ExportMailMerge(string htmlContent)
+        {
+            try
+            {
+
+                // prepare a document with the HTML content that we can use for conversion
+                HtmlFormatProvider provider = new HtmlFormatProvider();
+                RadFlowDocument document = provider.Import(htmlContent);
+                RadFlowDocumentEditor editor = new RadFlowDocumentEditor(document);
+
+                foreach (string entitat in entitats)
+                {
+                    if (entitat == "Familia")
+                    {
+                        foreach (string campFamilia in campsFamilia)
+                        {
+                            string match = "[" + entitat + ":" + campFamilia + "]";
+                            if (editor.FindAll(match).Count > 0)
+                            {
+                                editor.ReplaceText(match, "hola");
+                            }
+                        }
+                    }
+                }
+
+                RadFlowDocument mergedDoc = document.MailMerge(getData());
+                IFormatProvider<RadFlowDocument> fileFormatProvider = new pdfProviderNamespace.PdfFormatProvider();
+                using (MemoryStream ms = new MemoryStream())
+                {
+                    fileFormatProvider.Export(mergedDoc, ms);
+                    await FileDownloader.Save(_js, ms.ToArray(), "application/pdf", "hghgt.pdf");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.Write(ex.Message);
+            }
+        }
+
+        public IEnumerable getData()
+        {
+            List<Familia> families = new();
+            //families.Add(articlesDbContext.Families.First());
+            families = articlesDbContext.Families.ToList();
+            return families;
         }
 
         /// <summary>
