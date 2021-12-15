@@ -132,7 +132,7 @@ namespace ArticlesSQLite.Data
                     }
                 }
 
-                RadFlowDocument mergedDoc = document.MailMerge(getData());
+                RadFlowDocument mergedDoc = document.MailMerge(getMailMergeData());
                 IFormatProvider<RadFlowDocument>  fileFormatProvider = new pdfProviderNamespace.PdfFormatProvider();
                 using (MemoryStream ms = new MemoryStream())
                 {
@@ -150,10 +150,11 @@ namespace ArticlesSQLite.Data
         {
             try
             {
-
+                List<string> readFields = new List<string>();
                 // prepare a document with the HTML content that we can use for conversion
                 HtmlFormatProvider provider = new HtmlFormatProvider();
-                RadFlowDocument document = provider.Import(htmlContent);
+                RadFlowDocument template = provider.Import(htmlContent);
+                RadFlowDocument document = template.Clone();
                 RadFlowDocumentEditor editor = new RadFlowDocumentEditor(document);
 
                 foreach (string entitat in entitats)
@@ -165,17 +166,46 @@ namespace ArticlesSQLite.Data
                             string match = "[" + entitat + ":" + campFamilia + "]";
                             if (editor.FindAll(match).Count > 0)
                             {
-                                editor.ReplaceText(match, "hola");
+                                readFields.Add(entitat + ":" + campFamilia);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        foreach (string campArticle in campsArticle)
+                        {
+                            string match = "[" + entitat + ":" + campArticle + "]";
+                            if (editor.FindAll(match).Count > 0)
+                            {
+                                readFields.Add(entitat + ":" + campArticle);
                             }
                         }
                     }
                 }
 
-                RadFlowDocument mergedDoc = document.MailMerge(getData());
+                List<Familia> families = getAllData();
+
+                for (int i = 0; i < families.Count; i++)
+                {
+                    foreach (string readField in readFields)
+                    {
+                        string[] fields = readField.Split(":");
+                        if (i == 0)
+                        {
+                            editor.ReplaceText("[" + readField + "]", SelectFieldFamilia(families[i], fields[1]));
+                        }
+                        else
+                        {
+                            editor.InsertText(SelectFieldFamilia(families[i], fields[1]) + " ");
+                        }
+                    }
+                    editor.InsertParagraph();
+                }
+
                 IFormatProvider<RadFlowDocument> fileFormatProvider = new pdfProviderNamespace.PdfFormatProvider();
                 using (MemoryStream ms = new MemoryStream())
                 {
-                    fileFormatProvider.Export(mergedDoc, ms);
+                    fileFormatProvider.Export(document, ms);
                     await FileDownloader.Save(_js, ms.ToArray(), "application/pdf", "hghgt.pdf");
                 }
             }
@@ -185,12 +215,30 @@ namespace ArticlesSQLite.Data
             }
         }
 
-        public IEnumerable getData()
+        public IEnumerable getMailMergeData()
         {
             List<Familia> families = new();
             //families.Add(articlesDbContext.Families.First());
             families = articlesDbContext.Families.ToList();
             return families;
+        }
+
+        public List<Familia> getAllData()
+        {
+            List<Familia> families = articlesDbContext.Families.ToList();
+            return families;
+        }
+
+        public string SelectFieldFamilia(Familia familia, string field)
+        {
+            switch (field)
+            {
+                case "CodiFamilia":
+                    return familia.CodiFamilia;
+                case "Descripcio":
+                    return familia.Descripcio;
+            }
+            return null;
         }
 
         /// <summary>
