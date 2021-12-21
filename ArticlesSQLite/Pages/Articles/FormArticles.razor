@@ -117,6 +117,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        Console.WriteLine("hola");
         article = await ArticlesDbContext.Articles.FindAsync(codi);
         codisFamilia = await ArticlesDbContext.Families.Select(f => f.CodiFamilia).ToListAsync();
         if (article == null)

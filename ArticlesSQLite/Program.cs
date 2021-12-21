@@ -3,6 +3,7 @@ using ArticlesSQLite.Data;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using System.Configuration;
 using Telerik.Reporting.Cache.File;
 using Telerik.Reporting.Services;
 using Telerik.WebReportDesigner.Services;
@@ -19,7 +20,16 @@ builder.Services.AddTelerikBlazor();
 
 builder.Services.AddScoped<FileConverter>();
 builder.Services.AddSingleton<WeatherForecastService>();
-builder.Services.AddDbContext<ArticlesDbContext>();
+
+string TipusDB = builder.Configuration.GetValue("TipusDB", "SQLite");
+if (TipusDB.Equals("SQLServer"))
+{
+    builder.Services.AddDbContext<ArticlesDbContext, ArticlesDbContext_SQLServer>();
+}
+else if (TipusDB.Equals("SQLite"))
+{
+    builder.Services.AddDbContext<ArticlesDbContext, ArticlesDbContext_SQLite>();
+}
 
 builder.Services.TryAddSingleton<IReportServiceConfiguration>(sp => new ReportServiceConfiguration
 {
