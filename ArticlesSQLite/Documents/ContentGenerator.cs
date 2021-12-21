@@ -110,6 +110,7 @@ namespace ArticlesSQLite.Documents
             TableCell headerCell = headerRow.Cells.AddTableCell();
             headerCell.Borders = new TableCellBorders(new Border(BorderStyle.None));
             headerCell.ColumnSpan = 6;
+
             Block headerBlock = headerCell.Blocks.AddBlock();
             headerBlock.HorizontalAlignment = Telerik.Windows.Documents.Fixed.Model.Editing.Flow.HorizontalAlignment.Center;
 
